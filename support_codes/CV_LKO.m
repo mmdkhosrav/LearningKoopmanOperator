@@ -22,7 +22,7 @@
 % Delft University of Technology (TU Delft) 
 % August 2022
 %--------------------------------------------------------------------------
-function err = CV_LKO(theta,ZGY_CV,learning_type)
+function err = CV_LKO(theta,ZGY,learning_type)
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % initializations: 
@@ -35,47 +35,30 @@ else
 end
 %--------------------------------------------------------------------------
 if strcmp(learning_type, 'fro') || strcmp(learning_type, 'rnk')
-    Zt  =  ZGY_CV.Zt;
-    KGt =  ZGY_CV.KGt;
-    Yt  =  ZGY_CV.Yt;
-    
-    PGinv_GVt = ZGY_CV.PGinv_GVt;
-    KXvPt  = ZGY_CV.KXvPt;
-    KPtPv  =  ZGY_CV.KPtPv;
-    KXpvPv =  ZGY_CV.KXpvPv;
-    
     if strcmp(learning_type, 'fro') 
         lambda_est = exp(loglambda_est);
-        At = opt_sol_fro(Zt,KGt,Yt,lambda_est);
+        At = opt_sol_fro(ZGY.Zt,ZGY.KGt,ZGY.Yt,lambda_est);
     else
-        [At,~,~] = opt_sol_rnk(Zt,KGt,Yt,rnk_est);
+        [At,~,~] = opt_sol_rnk(ZGY.Zt,ZGY.KGt,ZGY.Yt,rnk_est);
     end
     
-    Ct = PGinv_GVt * At;
-    E_fro = KXvPt * Ct * KPtPv - KXpvPv;
-    err = sum(E_fro(:).^2);
+    Ct = (ZGY.PGinv_GVt) * At;
+    E_val = (ZGY.KXvPt) * Ct * (ZGY.KPtPv) - (ZGY.KXpvPv);
+    err = sum(E_val(:).^2);
 
 elseif strcmp(learning_type, 'nuc') || strcmp(learning_type, 'opr')
-    Ztr  =  ZGY_CV.Ztr;
-    KGtr =  ZGY_CV.KGtr;
-    Yt   =  ZGY_CV.Yt;
-    
-    PGinv_GVt = ZGY_CV.PGinv_GVt;
-    KXvPt  = ZGY_CV.KXvPt;
-    KPtPv  =  ZGY_CV.KPtPv;
-    KXpvPv =  ZGY_CV.KXpvPv;
-    
     lambda_est = exp(loglambda_est);
-    B0 = (eye(size(Ztr))/Ztr) * Yt * (eye(size(KGtr))/KGtr);
+    B0 = (eye(size(ZGY.Ztr))/(ZGY.Ztr)) * (ZGY.Yt) * ...
+                (eye(size(ZGY.KGtr))/(ZGY.KGtr));
     
     if strcmp(learning_type, 'nuc') 
-        [At,~,~,~,~,~,~] = opt_sol_nuc(Ztr,KGtr,Yt,lambda_est,B0);
+        [At,~,~,~,~,~,~] = opt_sol_nuc(ZGY.Ztr,ZGY.KGtr,ZGY.Yt,lambda_est,B0);
     else
-        [At,~,~,~,~,~,~] = opt_sol_opr(Ztr,KGtr,Yt,lambda_est,B0);
+        [At,~,~,~,~,~,~] = opt_sol_opr(ZGY.Ztr,ZGY.KGtr,ZGY.Yt,lambda_est,B0);
     end
-    Ct = PGinv_GVt * At;
-    E_nuc = KXvPt * Ct * KPtPv - KXpvPv;
-    err = sum(E_nuc(:).^2);
+    Ct = (ZGY.PGinv_GVt) * At;
+    E_val = (ZGY.KXvPt) * Ct * (ZGY.KPtPv) - (ZGY.KXpvPv);
+    err = sum(E_val(:).^2);
 end
 
 end

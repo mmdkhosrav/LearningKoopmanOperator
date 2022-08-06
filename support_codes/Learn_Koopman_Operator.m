@@ -78,34 +78,6 @@ else
 end
 
 %--------------------------------------------------------------------------
-% Taking out training and validation data for CV of hyperparameter tuning
-
-% the case of Frobenius norm regularization
-if strcmp(learning_type, 'fro') 
-    ZGY_CV.Zt  =  ZGY.Zt;
-    ZGY_CV.KGt =  ZGY.KGt;
-    ZGY_CV.Yt  =  ZGY.Yt;   
-    
-    ZGY_CV.PGinv_GVt = ZGY.PGinv_GVt;
-    ZGY_CV.KPtPv  =  ZGY.KPtPv;
-    ZGY_CV.KXvPt  = ZGY.KXvPt;
-    ZGY_CV.KXpvPv =  ZGY.KXpvPv;
-
-% the case of operator and nuclear norm regularization, and rank constriant    
-elseif  strcmp(learning_type, 'opr') || ...
-          strcmp(learning_type, 'nuc') || ...
-            strcmp(learning_type, 'rnk')
-    ZGY_CV.Ztr  =  ZGY.Ztr;
-    ZGY_CV.KGtr =  ZGY.KGtr;
-    ZGY_CV.Yt   =  ZGY.Yt;   
-    
-    ZGY_CV.PGinv_GVt = ZGY.PGinv_GVt;
-    ZGY_CV.KPtPv  = ZGY.KPtPv;
-    ZGY_CV.KXvPt  = ZGY.KXvPt;
-    ZGY_CV.KXpvPv = ZGY.KXpvPv;    
-end
-
-%--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % Bayesian optimization loop for estimating best hyperparameters, that are 
@@ -145,7 +117,7 @@ elseif  strcmp(learning_type, 'rnk')
     rnk_max = min([rnk_max size(ZGY.KGtr,2)]);
     
     rnk_var = optimizableVariable('rnk', [rnk_min,rnk_max],'Type','integer');
-    obj = @(theta)CV_LKO(theta,ZGY_CV,learning_type);
+    obj = @(theta)CV_LKO(theta,ZGY,learning_type);
 
     nBO_pp = 0;
     if 0
@@ -170,7 +142,7 @@ elseif  strcmp(learning_type, 'rnk')
     %----------------------------------------------------------------------
 % the case of EDMD    
 else
-    lambda_est = 0;
+    % lambda_est = 0;
 end
 
 %--------------------------------------------------------------------------
@@ -180,53 +152,32 @@ end
 
 % the case of Frobenius norm regularization or rank constraint
 if strcmp(learning_type, 'fro') || strcmp(learning_type, 'rnk')
-    Z   =  ZGY.Z;
-    KG  =  ZGY.KG;
-    KGt =  ZGY.KGt;
-    Y   =  ZGY.Y;
-    X   =  ZGY.X;
-    Xt  =  ZGY.Xt;
-    PGinv_GV  =  ZGY.PGinv_GV;
-        
     if strcmp(learning_type, 'fro') 
         lambda_est = exp(loglambda_est) ...
-                         /(size(Xt,1)*size(KGt,1))*(size(X,1)*size(KG,1));
-        A = opt_sol_fro(Z,KG,Y,lambda_est);
+                         /(size(ZGY.Xt,1) * size(ZGY.KGt,1))...
+                         *(size(ZGY.X,1)  * size(ZGY.KGt,1));
+        A = opt_sol_fro(ZGY.Z,ZGY.KG,ZGY.Y,lambda_est);
     else
-        [A,~,~] = opt_sol_rnk(Z,KG,Y,rnk_est);
+        [A,~,~] = opt_sol_rnk(ZGY.Z,ZGY.KG,ZGY.Y,rnk_est);
     end
-    C = PGinv_GV * A;
     %----------------------------------------------------------------------
 % the case of operator and nuclear norm regularization    
 elseif  strcmp(learning_type, 'opr') || strcmp(learning_type, 'nuc') 
-    Zr  =  ZGY.Zr;
-    KGr =  ZGY.KGr;
-    KGt =  ZGY.KGt;
-    Y   =  ZGY.Y;
-    X   =  ZGY.X;
-    Xt  =  ZGY.Xt;
-    PGinv_GV  =  ZGY.PGinv_GV;
-
     lambda_est = exp(loglambda_est) ...
-                /(size(Xt,1)*size(KGt,1))*(size(X,1)*size(KGr,1));
-    B0 = (eye(size(Zr))/Zr) * Y * (eye(size(KGr))/KGr);     
+                /(size(ZGY.Xt,1) * size(ZGY.KGt,1))...
+                *(size(ZGY.X,1)  * size(ZGY.KGr,1));
+    B0 = (eye(size(ZGY.Zr))/(ZGY.Zr)) * Y * (eye(size(ZGY.KGr))/(ZGY.KGr));     
   
     if strcmp(learning_type, 'nuc') 
-        [A,~,~,~,~,~,~] = opt_sol_nuc(Zr,KGr,Y,lambda_est,B0);
+        [A,~,~,~,~,~,~] = opt_sol_nuc(ZGY.Zr,ZGY.KGr,ZGY.Y,lambda_est,B0);
     else
-        [A,~,~,~,~,~,~] = opt_sol_opr(Zr,KGr,Y,lambda_est,B0);
+        [A,~,~,~,~,~,~] = opt_sol_opr(ZGY.Zr,ZGY.KGr,ZGY.Y,lambda_est,B0);
     end
-    C = PGinv_GV * A;
     %----------------------------------------------------------------------
 % the case of EDMD    
 else 
-    Z  =  ZGY.Z;
-    KG =  ZGY.KG;
-    Y  =  ZGY.Y;
-    PGinv_GV  =  ZGY.PGinv_GV;
-        
-    A = opt_sol_fro(Z,KG,Y,0);
-    C = PGinv_GV * A;
+    A = opt_sol_fro(ZGY.Z,ZGY.KG,ZGY.Y,0);
     %----------------------------------------------------------------------
 end
+C = (ZGY.PGinv_GV) * A;
 end
