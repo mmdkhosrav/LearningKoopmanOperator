@@ -1,72 +1,116 @@
-%__________________________________________________________________________
-% 
+%--------------------------------------------------------------------------
+% Learnin Koopman Operator
+% Ref: Representer Theorem for Learning Koopman Operators 
+% Link: https://arxiv.org/abs/2208.01681
+%
+% This code is a demo example for solving the following learning problem 
+%   min_K   E(K) + lambda * R(K),
+%   s.t.    K in C,
+% where E(.) is the sum squared error loss function, C is a constraint R(.)
+% the regularization term. For C and R, we have the following cases:
+%   1. R: square of operator norm of K, i.e.,  R(K) = ||K||^2 
+%   2. R: square of Frobenius norm of K, i.e.,  R(K) = ||K||_F^2 
+%   3. R: nuclear norm of K, i.e.,  R(K) = ||K||_* 
+%   4. C: rank of K, i.e.,  C = {K | rank(K) <= r} 
+%   5. R&C: if R=0 and C = L(K) (the whole space of bounded operators), the
+%      the program is equivalent to EDMD approach
+%
 % Mohammad Khosravi
-% July 2022
-% DCSC, TU Delft 
-% Learning Koopman Operator
-%__________________________________________________________________________
-tic;
-%==========================================================================
-%==========================================================================
-%==========================================================================
-CVx_ratio = 0.71;
-CVg_ratio = 0.41; 
+% Email: mohammad.khosravi@tudelft.nl
+% Delft Center for Systems and Control (DCSC)
+% Delft University of Technology (TU Delft) 
+% August 2022
+%--------------------------------------------------------------------------
 
-% SNR:  
+close all;  clear all;  clc;
+
+LW = 'linewidth';       FS = 'FontSize';        MS = 'MarkerSize';
+LOC = 'Location';       INT = 'Interpreter';    LX = 'Latex';   
+DN = 'DisplayName';     
+OLS = 'OutlierSize';    FG = 'FactorGap';
+
+CL = 'Color';
+blue_CL     = [0 0.45 0.74];    sky_CL      = [0 0.75 0.75];
+olive_CL    = [0.75 0.75 0];    orange_CL   = [0.85 0.33 0.1];
+purple_CL   = [0.75 0 0.75];
+
+%--------------------------------------------------------------------------
+% adding the path of support files
+currentFolder = pwd;
+addpath(currentFolder(1:end-12))
+
+%--------------------------------------------------------------------------
+% SNR level for adding noise to the system trajectories:  
 dBvalx = 10;
-rng(1000 * dBvalx);
-
-theta_k = [1 1 0 0 0];
-kernel_type = 'M5';
+rng(1000 * dBvalx); % for repeatability
 
 %--------------------------------------------------------------------------
-%==========================================================================
-%--------------------------------------------------------------------------
-% trajectory data generation
+% Generating tajectory of the system
+% range:
 x1_min = -3;        x1_max = 3;
 x2_min = -2.5;      x2_max = 2.5;
 
-eps_X_lim = 1e-2;   stb_mnf = 3;
+eps_X_lim = 1e-2; 
 
-Xi0 = [...
-           -2     2; %%
-            0    -1; %%
-          ];
+% initial point:
+Xi0 = [ -2     2; 
+         0    -1];
+     
+% number of trajectories     
 nt = size(Xi0,1);
 
+% sampling time for discretizing trajectory
 dT = 0.2;
-T  = [0:dT:10];
 
-X  = [];        Xp = [];            XXp = [];
+% time range
+T  = 0:dT:10;
 
-idx_X = [];     idx_Xp = [];        idx_XXp = [];
-idx_X_01 = [];  idx_Xp_01 = [];
+
+% trajectory data
+X  = [];   % X:   [x(0) x(1) x(2) ... x(nS-1)      ] (for single trajectory)
+Xp = [];   % Xp:  [     x(1) x(2) ... x(nS-1) x(nS)] (for single trajectory)
+XXp = [];  % XXp: [x(0) x(1) x(2) ... x(nS-1) x(nS)] (for single trajectory)
+
+% some index set for the trjaectories
+idx_X = [];     idx_Xp = [];    idx_X_01 = [];  idx_Xp_01 = []; idx_XXp = [];
+
 
 for i = 1:nt
-    x0 = Xi0(i,:);
-    %----------------------------------------------------------------------
-    Xi = x0;
+    % initiating dynamical system
+    Xi = Xi0(i,:);
+    
+    % some index set
+    idx_X_j = [];       
+    idx_Xp_j = [];
 
-    idx_X_j = [];       idx_Xp_j = [];
-
+    % generating the system i-th trajectory
     for j=1:length(T)-1
+        % next sample
         Xi = [Xi; DiffE_VP(Xi(end,:),dT)];
 
-        eps_X = min( [stb_mnf * abs((Xi(end,:).^[2 1]) * [1;-1]), ...
-                           norm(Xi(end-1,:)-Xi(end,:))]);
-        if eps_X < eps_X_lim
-        break;
-        end
+        % In case we want to avoid similar trajectory point, we can set         
+        % eps_X to small value and use following lines:
+        % eps_X = norm(Xi(end-1,:)-Xi(end,:));
+        % if eps_X < eps_X_lim
+        %     break;
+        % end
+
+        % collecting the data point
         idx_X_j  = [idx_X_j  ;  i    j-1];
         idx_Xp_j = [idx_Xp_j ;  i    j];
     end
 
-    X   = [X;  Xi(1:end-1,:)];  idx_X   = [idx_X;    idx_X_j];
-    Xp  = [Xp; Xi(2:end,:)];    idx_Xp  = [idx_Xp;   idx_Xp_j];
-    XXp = [XXp; Xi(1:end,:)];   idx_XXp = [idx_XXp;  idx_X_j;   i   j];
-
-    idx_X_01   = [idx_X_01;   ones(j,1);    0           ];
-    idx_Xp_01  = [idx_Xp_01;  0;            ones(j,1)   ];
+    % concatenate data points of trajectories    
+    X   = [X;  Xi(1:end-1,:)];
+    Xp  = [Xp; Xi(2:end,:)];
+    XXp = [XXp; Xi(1:end,:)];
+    
+    % updating index sets
+    idx_X   = [idx_X;    idx_X_j];
+    idx_Xp  = [idx_Xp;   idx_Xp_j];
+    idx_XXp = [idx_XXp;  idx_X_j; i j];    
+    idx_X_01   = [idx_X_01;   ones(j,1); 0];
+    idx_Xp_01  = [idx_Xp_01;  0;  ones(j,1)];
 end
 
 idx_X_loc  = find(idx_X_01  == 1);
@@ -75,29 +119,48 @@ idx_Xp_loc = find(idx_Xp_01 == 1);
 % We have:
 % XXp(idx_X_loc,:)  = X  or X  = XXp(idx_X_loc,:) 
 % XXp(idx_Xp_loc,:) = Xp or Xp = XXp(idx_Xp_loc,:) 
-%--------------------------------------------------------------------------
-% observables for training and validation
-Nx1_P = 10;     Nx2_P = 10;     s_P = 1; 
 
-x1_P_min = -2.5 * s_P;              x1_P_max = 2.5 * s_P;
-x2_P_min = -2.5 * s_P;              x2_P_max = 2.5 * s_P;
+%--------------------------------------------------------------------------
+% Choosing kernel type and parameters
+kernel_type = 'M5';    % MAtern kernel 5/2
+theta_k = [1 1 0 0 0];
+
+%--------------------------------------------------------------------------
+% The observales are defined as 
+%       g_l(.) = k(p_l, .),     l = 1,..., nG,
+% where k is the kernel function. The matrix P collects p_1,...,p_nG, i.e.,
+% P = [p_1',p_2',...,p_nG']'. We pick P as a grid in a suitable range.
+
+% discretizing the x1-axis and x2-axis
+Nx1_P = 10;     Nx2_P = 10;   
+% deciding on the range
+x1_P_min = -2.5;              x1_P_max = 2.5;
+x2_P_min = -2.5;              x2_P_max = 2.5;
 tmp_x1_P = (0:1/Nx1_P:1)';          tmp_x2_P = (0:1/Nx2_P:1)'; 
 x1_P_range = ( - x1_P_min + x1_P_max) * tmp_x1_P + x1_P_min;
 x2_P_range = ( - x2_P_min + x2_P_max) * tmp_x2_P + x2_P_min;
 [X1_P, X2_P] = meshgrid(x1_P_range,x2_P_range);
 P = [X1_P(:) X2_P(:)];
 
+% KG is the Gram matrix of p_1,...,p_nG, i.e., KG_(i,j) = k(p_i,p_j)  
 KG  = kernel_fun(  P, P, theta_k, kernel_type);
+
+% making sure that KG is positive definite and generating its square root 
+% matrix KGr.
 eps_KG = 1e-8; 
 [KG,KGr] = mxPD(KG,eps_KG);
 nG = size(KG,1);
 
+% choosing observables for training and validation
+CVg_ratio = 0.50;      % 50 percent for training, 50 percent for validation 
 CVg_step = floor(1/(1 - CVg_ratio) - 1e-8)+ 1;
 
+% some index set for the training and validation observables
 idx_P = (1:size(KG,1))';
 idx_Pt_loc = idx_P(mod(idx_P,CVg_step) ~= 0);  % training
 idx_Pv_loc = idx_P(mod(idx_P,CVg_step) == 0);  % validation
-Pt = P(idx_Pt_loc,:);       Pv = P(idx_Pv_loc,:);
+Pt = P(idx_Pt_loc,:);   % observables for training   
+Pv = P(idx_Pv_loc,:);   % observables for validation   
 
 KGt  = kernel_fun(Pt,Pt,theta_k,kernel_type);
 % KGt  = KG(idx_Pt_loc,idx_Pt_loc);
@@ -185,7 +248,8 @@ nZ = size(Z,1);
 %--------------------------------------------------------------------------
 % CV DATA
 
-CVx_step = floor(1/(1 - CVx_ratio) - 1e-8)+ 1;
+CVx_ratio = 0.75;
+CVx_step = floor(1/(1 - CVx_ratio));
  
 idx_X_vec = (1:size(X,1))';
 idx_XXpt_loc = idx_X_vec(mod(idx_X_vec,CVx_step) ~= 0);  % training
