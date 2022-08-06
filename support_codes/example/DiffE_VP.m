@@ -1,3 +1,16 @@
+%--------------------------------------------------------------------------
+% Learnin Koopman Operator
+% Ref: Representer Theorem for Learning Koopman Operators 
+% Link: https://arxiv.org/abs/2208.01681
+%
+% The Van der Pol dynamics used in Example 2 of the reference above.
+%
+% Mohammad Khosravi
+% Email: mohammad.khosravi@tudelft.nl
+% Delft Center for Systems and Control (DCSC)
+% Delft University of Technology (TU Delft) 
+% August 2022
+%--------------------------------------------------------------------------
 function y = DiffE_VP(x,dt)
 % mu = 0.8;
 % a = 0.7; 
