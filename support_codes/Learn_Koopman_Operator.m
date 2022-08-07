@@ -166,7 +166,7 @@ elseif  strcmp(learning_type, 'opr') || strcmp(learning_type, 'nuc')
     lambda_est = exp(loglambda_est) ...
                 /(size(ZGY.Xt,1) * size(ZGY.KGt,1))...
                 *(size(ZGY.X,1)  * size(ZGY.KGr,1));
-    B0 = (eye(size(ZGY.Zr))/(ZGY.Zr)) * Y * (eye(size(ZGY.KGr))/(ZGY.KGr));     
+    B0 = (eye(size(ZGY.Zr))/(ZGY.Zr)) * (ZGY.Y) * (eye(size(ZGY.KGr))/(ZGY.KGr));     
   
     if strcmp(learning_type, 'nuc') 
         [A,~,~,~,~,~,~] = opt_sol_nuc(ZGY.Zr,ZGY.KGr,ZGY.Y,lambda_est,B0);

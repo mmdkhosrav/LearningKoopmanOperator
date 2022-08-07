@@ -23,8 +23,8 @@
 % Delft University of Technology (TU Delft) 
 % August 2022
 %--------------------------------------------------------------------------
-
 close all;  clear all;  clc;
+%--------------------------------------------------------------------------
 
 LW = 'linewidth';       FS = 'FontSize';        MS = 'MarkerSize';
 LOC = 'Location';       INT = 'Interpreter';    LX = 'Latex';   
@@ -153,7 +153,7 @@ nG = size(KG,1);
 
 % choosing observables for training and validation
 CVg_ratio = 0.50;      % 50 percent for training, 50 percent for validation 
-CVg_step = floor(1/(1 - CVg_ratio) - 1e-8)+ 1;
+CVg_step = floor(1/(1 - CVg_ratio));
 
 % some index set for the training and validation observables
 idx_P = (1:size(KG,1))';
@@ -273,7 +273,7 @@ nZ = size(Z,1);
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-% solitting trajectory data points for training and validation
+% splitting trajectory data points for training and validation
 CVx_ratio = 0.75; % 75 percent for training, 25 percent for validation 
 CVx_step = floor(1/(1 - CVx_ratio));
 
@@ -292,13 +292,12 @@ nsv = size(Xv,1);
 % Yt = kernel_fun(Xpt,Pt,theta_k,kernel_type);
 Yt = Y(idx_XXpt_loc,idx_Pt_loc);
 
-
-% PGt = kernel_fun(Xt,Pt,theta_k,kernel_type);
-PGt = KPG(idx_XXpt_loc,idx_Pt_loc);
+% KPGt = kernel_fun(Xt,Pt,theta_k,kernel_type);
+KPGt = KPG(idx_XXpt_loc,idx_Pt_loc);
 
 % Calculation of GV for training data
-PGinv_GVt = (eye(size(KGt))/KGt) * (PGt');
-GVt = PGt * PGinv_GVt;
+PGinv_GVt = (eye(size(KGt))/KGt) * (KPGt');
+GVt = KPGt * PGinv_GVt;
 
 % Calculation of Z matrix for training data
 Zt = GVt; 
@@ -332,6 +331,7 @@ ZGY.PGinv_GV  =  PGinv_GV;  ZGY.PGinv_GVt = PGinv_GVt;
 ZGY.KXvPt  = KXvPt;         ZGY.KPtPv  =  KPtPv;
 ZGY.KXpvPv = KXpvPv;
 
+disp('----------------------------------------------')
 %--------------------------------------------------------------------------
 % Extended dynamic mode decomposition (EDMD):
 % We would like to solve the following CONVEX programm
@@ -346,9 +346,11 @@ disp(['Running EDMD method ...'])
 EE_edmd = KXtstP * C_edmd * KPPtst - KXptstPtst;
 err_MSE_edmd  = sum(EE_edmd(:).^2)* dx1dx2_Xtst/nG;
 
+disp(' ')
 disp('Running EDMD method is finished!')
 disp(['The MSE is ', num2str(err_MSE_edmd)])
 disp(' ')
+disp('----------------------------------------------')
 
 %--------------------------------------------------------------------------
 % Frobenius norm regularization:
@@ -367,12 +369,14 @@ disp('Running with Frobenius norm regularization ...')
 EE_fro = KXtstP * C_fro * KPPtst - KXptstPtst;
 err_MSE_fro  = sum(EE_fro(:).^2)* dx1dx2_Xtst/nG;
 
+disp(' ')
 disp('Running with Frobenius norm regularization is finished!')
 disp(['The MSE is ', num2str(err_MSE_fro)])
 disp(' ')
+disp('----------------------------------------------')
 
 %--------------------------------------------------------------------------
-% Frobenius norm regularization:
+% Nuclear norm regularization:
 % We would like to solve the following CONVEX programm
 %       min_B   ||Z * B * G - Y||_F^2
 %       s.t.    rank(B) <= r
@@ -389,34 +393,11 @@ EE_rnk = KXtstP * C_rnk * KPPtst - KXptstPtst;
 err_MSE_rnk  = sum(EE_rnk(:).^2)* dx1dx2_Xtst/nG;
 err_R2_rnk   = 100 * (1- (mean(EE_rnk(:).^2)).^0.5/std(KXptstPtst(:)));
 
+disp(' ')
 disp('Running with rank constraint is finished!')
 disp(['The MSE is ', num2str(err_MSE_rnk)])
 disp(' ')
-
-%--------------------------------------------------------------------------
-% Nuclear norm regularization:
-% We use change-of-variable B = Zr * A * Gr, solve the following CONVEX
-% program
-%       min_B   ||Zr * B * Gr||_F^2 + lambda * ||B||_*,
-% and set A = inv(Zr) * B * inv(Gr). Note that without cvx + Mosek, we have
-% some partial numerical inexactness in the solutions.  On the other hand,
-% using L-BFGS we have a more scalable approach in terms of memory, but
-% slower.
-
-opt.learning_type = 'nuc';
-opt.loglambda_range = [-20 22];
-opt.nB0 = 30;
-
-disp('Running with nuclear norm regularization ...')
-disp('This will take a while. Please be patient!')
-
-[A_nuc,C_nuc]  = Learn_Koopman_Operator(ZGY,opt);
-EE_nuc = KXtstP * C_nuc * KPPtst - KXptstPtst;
-err_MSE_nuc  = sum(EE_nuc(:).^2)* dx1dx2_Xtst/nG;
-
-disp('Running with nuclear norm regularization is finished!')
-disp(['The MSE is ', num2str(err_MSE_nuc)])
-disp(' ')
+disp('----------------------------------------------')
 
 %--------------------------------------------------------------------------
 % Operator norm regularization:
@@ -433,15 +414,69 @@ opt.loglambda_range = [-20 22];
 opt.nB0 = 30;
 
 disp('Running with squared operator norm regularization method ...')
-disp('This will take a while. Please be patient!')
+disp('This will take a while (less than an hour on a standard PC). Please')
+disp(['be patient. The code is solving ',num2str(opt.nB0),' CONVEX optimization problem of']) 
+disp(['dimension ',num2str(size(Xt,1) * size(Pt,1)),...
+    ' for CV and an optimization problem of dimension ',num2str(size(X,1) * size(P,1)),'.'])
+
+format shortg
+c = clock;
+disp(['Start time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...
+    num2str(c(4)),':',num2str(c(5))])
 
 [A_opr,C_opr]  = Learn_Koopman_Operator(ZGY,opt);
 EE_opr = KXtstP * C_opr * KPPtst - KXptstPtst;
 err_MSE_opr  = sum(EE_opr(:).^2)* dx1dx2_Xtst/nG;
 
+disp(' ')
 disp('Running with squared operator norm regularization method is finished!')
+format shortg
+c = clock;
+disp(['End time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...
+    num2str(c(4)),':',num2str(c(5))])
 disp(['The MSE is ', num2str(err_MSE_opr)])
 disp(' ')
+disp('----------------------------------------------')
+
+%--------------------------------------------------------------------------
+% Nuclear norm regularization:
+% We use change-of-variable B = Zr * A * Gr, solve the following CONVEX
+% program
+%       min_B   ||Zr * B * Gr||_F^2 + lambda * ||B||_*,
+% and set A = inv(Zr) * B * inv(Gr). Note that without cvx + Mosek, we have
+% some partial numerical inexactness in the solutions.  On the other hand,
+% using L-BFGS we have a more scalable approach in terms of memory, but
+% slower.
+
+opt.learning_type = 'nuc';
+opt.loglambda_range = [-20 22];
+opt.nB0 = 30;
+
+disp('Running with nuclear norm regularization method ...')
+disp('This will take a while (several hours on a standard PC). Please be  ')
+disp(['patient. The code is solving ',num2str(opt.nB0),' CONVEX optimization problem of']) 
+disp(['dimension ',num2str(size(Xt,1) * size(Pt,1)),...
+    'for CV and an optimization problem of dimension ',num2str(size(X,1) * size(P,1)),'.'])
+
+format shortg
+c = clock;
+disp(['Start time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...
+    num2str(c(4)),':',num2str(c(5))])
+
+[A_nuc,C_nuc]  = Learn_Koopman_Operator(ZGY,opt);
+EE_nuc = KXtstP * C_nuc * KPPtst - KXptstPtst;
+err_MSE_nuc  = sum(EE_nuc(:).^2)* dx1dx2_Xtst/nG;
+
+disp(' ')
+disp('Running with nuclear norm regularization is finished!')
+format shortg
+c = clock;
+disp(['End time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...
+    num2str(c(4)),':',num2str(c(5))])
+disp(['The MSE is ', num2str(err_MSE_nuc)])
+disp(' ')
+disp('----------------------------------------------')
+
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % for saving data

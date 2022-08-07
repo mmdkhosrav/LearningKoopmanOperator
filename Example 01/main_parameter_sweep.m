@@ -73,8 +73,8 @@ for i = 1:nt
             Xi(j+1,:) = (DiffE_2D(Xi(j,:)))';
             
             % In case we want to avoid similar trajectory point, we can set         
-            % eps_X to small value and use following lines
-            % eps_X = abs((Xi(end,:).^[2 1]) * [1;-1]);
+            % eps_X to small value and use following lines:
+            % eps_X = norm(Xi(end-1,:)-Xi(end,:));
             % if eps_X < eps_X_lim
             %     break;
             % end
@@ -105,7 +105,7 @@ idx_Xp_loc = find(idx_Xp_01 == 1);
 
 % to save data points:
 % save('data_DiffE_parameter_sweep.mat',...
-%     'Xi0','nt', 'var_nsi','eps_X_lim', ...
+%     'Xi0','nt', ...
 %     'X','Xp','XXp',...
 %     'idx_X','idx_Xp',...
 %     'idx_X_01','idx_Xp_01','idx_XXp',...
@@ -125,13 +125,13 @@ P = [    1     0;
          1     1;   
          0     1;];
 
-% G is the Gram matrix of p_1,...,p_nG, i.e., G_(i,j) = k(p_i,p_j)    
-G  = kernel_fun(  P, P, theta_k, kernel_type);
+% KG is the Gram matrix of p_1,...,p_nG, i.e., KG_(i,j) = k(p_i,p_j)    
+KG  = kernel_fun(  P, P, theta_k, kernel_type);
 
 % making sure that G is positive definite and generating its square root Gr.
-eps_G = 1e-4;
-[G,Gr] = mxPD(G,eps_G);
-nG = size(G,1);
+eps_KG = 1e-4;
+[KG,KGr] = mxPD(KG,eps_KG);
+nG = size(KG,1);
 
 % % trajectory data
 % X  = XXp(idx_X_loc,:);
@@ -148,9 +148,9 @@ Y = KXXpP(idx_Xp_loc,:);
 % , nS and  j = 1, ... , nG. Note that KPG is a sub-matrix of KXXpP
 KPG = kernel_fun(X,P,theta_k,kernel_type);
 
-% Here, we calculate matrices PGinv_GV = inv(G) * KPG and GV = KPG *  inv(G) * KPG. 
+% Here, we calculate matrices PGinv_GV = inv(G)*KPG and GV = KPG*inv(G)*KPG. 
 % For more details, please see Remark 4 in the reference.
-PGinv_GV = (eye(size(G))/G) * (KPG');
+PGinv_GV = (eye(size(KG))/KG) * (KPG');
 GV = KPG * PGinv_GV;
 
 % To unify the notations, we use Z.
@@ -192,28 +192,28 @@ if cvx_solve_opr
     cvx_begin quiet
         variable B(nZ,nG)
         variable opr_bnd(1)
-        minimize(sum_square(vec(Zr * B * Gr - Y)) +  lambda * opr_bnd^2)
+        minimize(sum_square(vec(Zr * B * KGr - Y)) +  lambda * opr_bnd^2)
         subject to
         norm(B) <= opr_bnd
     cvx_end
-    A_star_opr = (eye(nZ)/Zr) * B * (eye(nG)/Gr);
+    A_star_opr = (eye(nZ)/Zr) * B * (eye(nG)/KGr);
     
 else
-    [AB_star,~,~,~,~,~,~] = opt_sol_opr(Zr,Gr,Y,lambda);
+    [AB_star,~,~,~,~,~,~] = opt_sol_opr(Zr,KGr,Y,lambda);
     A_star_opr = AB_star;
 end
 
 C_star_opr = PGinv_GV * A_star_opr;
-eig_opr(:,i) = eig(C_star_opr*G);
+eig_opr(:,i) = eig(C_star_opr*KG);
 %--------------------------------------------------------------------------
 % Frobenius norm regularization:
 % We would like to solve the following CONVEX programm
 %       min_K ||Z * B * G - Y||_F^2 + lambda * ||Zr * B * Gr||_F^2,
 % which has a closed form solution.
 
-A_star_fro = opt_sol_fro(Z,G,Y,lambda);
+A_star_fro = opt_sol_fro(Z,KG,Y,lambda);
 C_star_fro = PGinv_GV * A_star_fro;
-eig_fro(:,i) = eig(C_star_fro*G);
+eig_fro(:,i) = eig(C_star_fro*KG);
 
 %--------------------------------------------------------------------------
 % Nuclear norm regularization:
@@ -227,16 +227,16 @@ if cvx_solve_nuc
     cvx_solver mosek
     cvx_begin quiet
         variable B(nZ,nG)
-        minimize(sum_square(vec(Zr * B * Gr - Y)) + lambda * norm_nuc(B))
+        minimize(sum_square(vec(Zr * B * KGr - Y)) + lambda * norm_nuc(B))
     cvx_end
     B_cvx = B;
-    A_star_nuc = (eye(nZ)/Zr) * B * (eye(nG)/Gr);
+    A_star_nuc = (eye(nZ)/Zr) * B * (eye(nG)/KGr);
 else
-    [AB_star,~,~,~,~,~,~] = opt_sol_nuc(Zr,Gr,Y,lambda);
+    [AB_star,~,~,~,~,~,~] = opt_sol_nuc(Zr,KGr,Y,lambda);
     A_star_nuc = AB_star;
 end
 C_star_nuc = PGinv_GV * A_star_nuc;
-eig_nuc(:,i) = eig(C_star_nuc*G);
+eig_nuc(:,i) = eig(C_star_nuc*KG);
 
 %--------------------------------------------------------------------------
 perc = num2str(2000-floor(i/n_lambda*1000));
@@ -250,9 +250,9 @@ end
 %       min_K ||Z * B * G - Y||_F^2,
 % which is the case of Frobenius norm with lambda = 0.
 
-A_star_fro = opt_sol_fro(Z,G,Y,0);
+A_star_fro = opt_sol_fro(Z,KG,Y,0);
 C_star_fro = PGinv_GV * A_star_fro;
-eig_EDMD(:,i) = eig(C_star_fro*G);
+eig_EDMD(:,i) = eig(C_star_fro*KG);
 
 abs_eig_fro = sort(abs(eig_fro))';
 abs_eig_opr = sort(abs(eig_opr))';
