@@ -81,7 +81,7 @@ end
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % Bayesian optimization loop for estimating best hyperparameters, that are 
-% either lambda or rank
+% either lambda or rank. This is done by CV.
 
 % the case of Frobenius, operator, and nuclear norm regularization
 if strcmp(learning_type, 'fro') || ...

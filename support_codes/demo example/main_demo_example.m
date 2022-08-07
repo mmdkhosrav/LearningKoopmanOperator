@@ -6,14 +6,16 @@
 % This code is a demo example for solving the following learning problem 
 %   min_K   E(K) + lambda * R(K),
 %   s.t.    K in C,
-% where E(.) is the sum squared error loss function, C is a constraint R(.)
-% the regularization term. For C and R, we have the following cases:
+% where E(.) is the sum squared error loss function, C is a given constraint, 
+% R(.) is the regularization term. 
+%
+% For C and R, we have the following cases:
 %   1. R: square of operator norm of K, i.e.,  R(K) = ||K||^2 
 %   2. R: square of Frobenius norm of K, i.e.,  R(K) = ||K||_F^2 
 %   3. R: nuclear norm of K, i.e.,  R(K) = ||K||_* 
 %   4. C: rank of K, i.e.,  C = {K | rank(K) <= r} 
 %   5. R&C: if R=0 and C = L(K) (the whole space of bounded operators), the
-%      the program is equivalent to EDMD approach
+%      the program is equivalent to the EDMD approach
 %
 % Mohammad Khosravi
 % Email: mohammad.khosravi@tudelft.nl
@@ -260,7 +262,11 @@ KPG = kernel_fun(X,P,theta_k,kernel_type);
 PGinv_GV = (eye(size(KG))/KG) * (KPG');
 GV = KPG * PGinv_GV;
 
+% To unify the notations, we use Z.
 Z = GV; 
+
+% making sure that Z is positive definite and generating its square matrix 
+% root Zr. This also improves numerical performance of the implementations.
 eps_Z = 1e-8;
 [Z,Zr] = mxPD(Z,eps_Z);
 nZ = size(Z,1);
@@ -327,7 +333,11 @@ ZGY.KXvPt  = KXvPt;         ZGY.KPtPv  =  KPtPv;
 ZGY.KXpvPv = KXpvPv;
 
 %--------------------------------------------------------------------------
-% edmd method
+% Extended dynamic mode decomposition (EDMD):
+% We would like to solve the following CONVEX programm
+%       min_B ||Z * B * G - Y||_F^2,
+% which is the case of Frobenius norm with lambda = 0.
+
 opt.learning_type = 'edmd';
 disp(['Running EDMD method ...'])
 
@@ -341,6 +351,12 @@ disp(['The MSE is ', num2str(err_MSE_edmd)])
 disp(' ')
 
 %--------------------------------------------------------------------------
+% Frobenius norm regularization:
+% We would like to solve the following CONVEX programm
+%       min_B ||Z * B * G - Y||_F^2 + lambda * ||Zr * B * Gr||_F^2,
+% which has a closed form solution. This implementation is highly scalable
+% in terms of time and memory. Also, it has a great performance.
+
 opt.learning_type = 'fro';
 opt.loglambda_range = [-20 22];
 opt.nB0 = 30;
@@ -356,6 +372,12 @@ disp(['The MSE is ', num2str(err_MSE_fro)])
 disp(' ')
 
 %--------------------------------------------------------------------------
+% Frobenius norm regularization:
+% We would like to solve the following CONVEX programm
+%       min_B   ||Z * B * G - Y||_F^2
+%       s.t.    rank(B) <= r
+% which has a closed form solution in terms of SVD of Y, Z and G.
+
 opt.learning_type = 'rnk';
 opt.rnk = [1 size(KGtr,2)];
 opt.nB0 = 30;
@@ -372,6 +394,15 @@ disp(['The MSE is ', num2str(err_MSE_rnk)])
 disp(' ')
 
 %--------------------------------------------------------------------------
+% Nuclear norm regularization:
+% We use change-of-variable B = Zr * A * Gr, solve the following CONVEX
+% program
+%       min_B   ||Zr * B * Gr||_F^2 + lambda * ||B||_*,
+% and set A = inv(Zr) * B * inv(Gr). Note that without cvx + Mosek, we have
+% some partial numerical inexactness in the solutions.  On the other hand,
+% using L-BFGS we have a more scalable approach in terms of memory, but
+% slower.
+
 opt.learning_type = 'nuc';
 opt.loglambda_range = [-20 22];
 opt.nB0 = 30;
@@ -386,7 +417,17 @@ err_MSE_nuc  = sum(EE_nuc(:).^2)* dx1dx2_Xtst/nG;
 disp('Running with nuclear norm regularization is finished!')
 disp(['The MSE is ', num2str(err_MSE_nuc)])
 disp(' ')
+
 %--------------------------------------------------------------------------
+% Operator norm regularization:
+% We use change-of-variable B = Zr * A * Gr, solve the following CONVEX
+% program
+%       min_B   ||Zr * B * Gr - Y||_F^2 + lambda * ||B||^2,
+% and set A = inv(Zr) * B * inv(Gr). Note that without cvx + Mosek, we have
+% some partial numerical inexactness in the solutions. On the other hand,
+% using L-BFGS we have a more scalable approach in terms of memory, but
+% slower.
+
 opt.learning_type = 'opr';
 opt.loglambda_range = [-20 22];
 opt.nB0 = 30;
