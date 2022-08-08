@@ -159,8 +159,8 @@ idx_Xp_loc = find(idx_Xp_01 == 1);
 
 %--------------------------------------------------------------------------
 % % Plotting initial solution
-% figure()
 % [T_range,XI_range] = meshgrid(T,0:Dxi:1);
+% figure()
 % mesh(T_range,XI_range,XXp')
 % getframe;
 
@@ -225,6 +225,7 @@ idx_Wp_loc = find(idx_Wp_01 == 1);
 %--------------------------------------------------------------------------
 % % Plotting test solution
 % [T_range,W_range] = meshgrid(T,0:Dxi:1);
+% figure()
 % mesh(T_range,W_range,WWp')
 % getframe;
 
@@ -414,6 +415,9 @@ opt.loglambda_range = [-20 22];
 opt.nB0 = 30;
 
 disp('Running with Frobenius norm regularization ...')
+disp('This will take a while (several hours on a standard PC). Please be ')
+disp('patient.                                                           ') 
+
 format shortg
 c = clock;
 disp(['Start time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...

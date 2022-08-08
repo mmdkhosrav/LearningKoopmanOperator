@@ -10,7 +10,7 @@
 % August 2022
 %--------------------------------------------------------------------------
 function [y,g] = obj_opr_ZrGr(x,Y,Zr,Gr,lambda)
-%-------------------------------------------------------------------------%
+%--------------------------------------------------------------------------
 % Y:    The matrix with entries g_l(x(k-1)), for l=1,...,nG and k=1,...,nS  
 % Zr:   Z^0.5 
 % Gr:   G^0.5 
@@ -46,17 +46,15 @@ if nargout == 2
     end
     
     dGv = 2 * lambda * S(1) * U(:,1) * V(:,1)';
-    if 1
-        s = diag(S);
-        idx_s = find((s>(s(1)-1e-8)));
-        for k = idx_s(2:end)
-            dGv = dGv + 2 * lambda * s(1) * U(:,k) * V(:,k)';
-        end    
-    end
+    s = diag(S);
+    eps_eig = 1e-8;
+    idx_s = find((s>(s(1) - eps_eig)));
+    for k = idx_s(2:end)
+        dGv = dGv + 2 * lambda * s(1) * U(:,k) * V(:,k)';
+    end    
     Gv = 2 * Zr * E * Gr + dGv;
 
     g =   Gv(:);
-    %g = g/norm(g);
 end
 
 end

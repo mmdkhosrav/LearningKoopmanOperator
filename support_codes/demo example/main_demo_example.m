@@ -456,7 +456,7 @@ disp('Running with nuclear norm regularization method ...')
 disp('This will take a while (several hours on a standard PC). Please be  ')
 disp(['patient. The code is solving ',num2str(opt.nB0),' CONVEX optimization problem of']) 
 disp(['dimension ',num2str(size(Xt,1) * size(Pt,1)),...
-    'for CV and an optimization problem of dimension ',num2str(size(X,1) * size(P,1)),'.'])
+    ' for CV and an optimization problem of dimension ',num2str(size(X,1) * size(P,1)),'.'])
 
 format shortg
 c = clock;
