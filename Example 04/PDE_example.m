@@ -485,6 +485,7 @@ ytlFS = 11;    % y-tick font sizes
 max_data = max(max([WWp W_hat_fro]));
 min_data = min(min([WWp W_hat_fro]));
 
+[T_range,W_range] = meshgrid(T,0:Dxi:1);
 
 N_plot = 33;
 f = figure();
