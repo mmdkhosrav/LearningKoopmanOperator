@@ -249,7 +249,7 @@ theta_k = [1 zeros(1,nx)];
 % where k is the kernel function. The matrix P collects p_1,...,p_nG, i.e.,
 % P = [p_1',p_2',...,p_nG']'. Here, we set nG = 2 * nX and draw them
 % randomly from standard normal distribution in R^nx, i.e., N(0_nx,I_nx).
-P = mvnrnd(zeros(1,nx),eye(nx),2*nx);   % data002.mat
+P = mvnrnd(zeros(1,nx),eye(nx),2*nx);  
 
 % KG is the Gram matrix of p_1,...,p_nG, i.e., KG_(i,j) = k(p_i,p_j)    
 KG  = kernel_fun(P, P, theta_k, kernel_type);
