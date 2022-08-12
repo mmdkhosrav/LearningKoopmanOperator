@@ -1,1 +1,1 @@
-Example 2 is basically similar to the demo example in folder support_Codes. The Monte Carlo results are available here: https://drive.google.com/drive/folders/1dTKuk95fpnj_5zeqMxB-kFpEhUga7fCI?usp=sharing
+Example 2 is basically similar to the demo example in "support_codes" folder. The Monte Carlo results are available here: https://drive.google.com/drive/folders/1dTKuk95fpnj_5zeqMxB-kFpEhUga7fCI?usp=sharing
