@@ -18,8 +18,37 @@
 % Delft University of Technology (TU Delft) 
 % August 2022
 %--------------------------------------------------------------------------
-
 close all;  clear all;  clc;
+%--------------------------------------------------------------------------
+disp('-------------------------------------------------------------------')
+disp('Learnin Koopman Operator:                                          ')
+disp('Ref: Representer Theorem for Learning Koopman Operators            ')
+disp('Link: https://arxiv.org/abs/2208.01681                             ')
+disp('                                                                   ')
+disp('This code concerns sweeping the regularization weight lambda in the') 
+disp('learning Koopman operator problem introduced in the reference above')  
+disp('(Example 1). We consider the following learning problem            ')
+disp('      min_K E(K) + lambda * R(K),                                  ')
+disp('where E(.) is the sum squared error loss function and, R(.) is one ')
+disp('of the following regularization terms:                             ')
+disp('   1. square of operator norm of K, i.e., R(K) = ||K||^2,          ')
+disp('   2. square of Frobenius norm of K, i.e., R(K) = ||K||_F^2,       ')
+disp('   3. nuclear norm of K, i.e., R(K) = ||K||_*.                     ')
+disp('We sweep lambda from 0 to infinite, and solve the learning problem.')
+disp('                                                                   ')
+disp('Mohammad Khosravi                                                  ')
+disp('Email: mohammad.khosravi@tudelft.nl                                ')
+disp('Delft Center for Systems and Control (DCSC)                        ')
+disp('Delft University of Technology (TU Delft)                          ')
+disp('August 2022                                                        ')
+disp('-------------------------------------------------------------------')
+disp('The program is started!')
+format shortg
+c = clock;
+disp(['Start time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...
+    num2str(c(4)),':',num2str(c(5))])
+disp(' ')
+%--------------------------------------------------------------------------
 
 LW = 'linewidth';       FS = 'FontSize';        MS = 'MarkerSize';
 LOC = 'Location';       INT = 'Interpreter';    LX = 'Latex';   

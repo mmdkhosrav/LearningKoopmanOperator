@@ -15,7 +15,7 @@
 %   3. R: nuclear norm of K, i.e.,  R(K) = ||K||_* 
 %   4. C: rank of K, i.e.,  C = {K | rank(K) <= r} 
 %   5. R&C: if R=0 and C = L(K) (the whole space of bounded operators), the
-%      the program is equivalent to the EDMD approach
+%      program is equivalent to the EDMD approach
 %
 % Mohammad Khosravi
 % Email: mohammad.khosravi@tudelft.nl
@@ -24,6 +24,38 @@
 % August 2022
 %--------------------------------------------------------------------------
 close all;  clear all;  clc;
+%--------------------------------------------------------------------------
+disp('-------------------------------------------------------------------')
+disp('Learnin Koopman Operator:                                          ')
+disp('Ref: Representer Theorem for Learning Koopman Operators            ') 
+disp('Link: https://arxiv.org/abs/2208.01681                             ')
+disp('                                                                   ')
+disp('This code is a demo example for solving the learning problem       ') 
+disp('       min_K   E(K) + lambda * R(K),                               ')
+disp('       s.t.    K in C,                                             ')
+disp('where E(.) is the sum squared error loss function, C corresponds to')
+disp('given constraint, R(.) is the regularization term.                 ')
+disp('                                                                   ')
+disp('For C and R, we have the following cases:                          ')
+disp('   1. R: square of operator norm of K, i.e., R(K) = ||K||^2        ') 
+disp('   2. R: square of Frobenius norm of K, i.e., R(K) = ||K||_F^2     ') 
+disp('   3. R: nuclear norm of K, i.e.,  R(K) = ||K||_*                  ') 
+disp('   4. C: rank of K, i.e.,  C = {K | rank(K) <= r}                  ') 
+disp('   5. R&C: if R = 0 and C = L(K) (the space of bounded operators), ') 
+disp('      the program is equivalent to the EDMD approach.              ') 
+disp('                                                                   ')
+disp('Mohammad Khosravi                                                  ')
+disp('Email: mohammad.khosravi@tudelft.nl                                ')
+disp('Delft Center for Systems and Control (DCSC)                        ')
+disp('Delft University of Technology (TU Delft)                          ') 
+disp('August 2022                                                        ')
+disp('-------------------------------------------------------------------')
+disp('The program is started!')
+format shortg
+c = clock;
+disp(['Start time: ',num2str(c(1)),'-',num2str(c(2))','-',num2str(c(3)),' ',...
+    num2str(c(4)),':',num2str(c(5))])
+disp(' ')
 %--------------------------------------------------------------------------
 
 LW = 'linewidth';       FS = 'FontSize';        MS = 'MarkerSize';
