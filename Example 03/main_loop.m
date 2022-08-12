@@ -257,7 +257,7 @@ XXp_NL = XXp;               % a noiseless backup for XXp
 
 %--------------------------------------------------------------------------
 
-for MC_num = 001:001 %450
+parfor MC_num = 1:450
     LKR_loop_stbSI(MC_num,...
          XXp_NL,dBvalx,P,KG,KGr,KXtstP,KPPtst,KXptstPtst,dx1dx2_Xtst,...
          theta_k, kernel_type,nG,idx_X_loc,idx_Xp_loc);    
