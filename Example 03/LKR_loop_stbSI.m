@@ -1,3 +1,24 @@
+%--------------------------------------------------------------------------
+% Learnin Koopman Operator
+% Ref: Representer Theorem for Learning Koopman Operators 
+% Link: https://arxiv.org/abs/2208.01681
+%
+% This code is a function used in the Monte Carlo loop for evaluating the 
+% impact of including side-information on the learning of Koopman operators. 
+% We consider the Nicholson and Bailey model for the host and parasitoids 
+% dynamics, which is a stable system, and subsequently, we compare the 
+% performance for the following learning Koopman operator approaches:                     
+%    1. EDMD method,                                                 
+%    2. Frobenius regularization,                                    
+%    3. Frobenius regularization with stability-inducing constraints.  
+% More details are provided in Example 4 in the reference above.  
+%
+% Mohammad Khosravi
+% Email: mohammad.khosravi@tudelft.nl
+% Delft Center for Systems and Control (DCSC)
+% Delft University of Technology (TU Delft) 
+% August 2022
+%--------------------------------------------------------------------------
 function IterTime = ...
     LKR_loop_stbSI(MC_num,...
                      XXp_NL,dBvalx,P,KG,KGr,KXtstP,KPPtst,KXptstPtst,dx1dx2_Xtst,...
