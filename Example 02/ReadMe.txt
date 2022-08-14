@@ -1,1 +1,3 @@
-Example 2 is basically similar to the demo example in "support_codes" folder. The Monte Carlo results are available here: https://drive.google.com/drive/folders/1dTKuk95fpnj_5zeqMxB-kFpEhUga7fCI?usp=sharing
+Example 2 is basically similar to the demo example in "support_codes" folder. The code performs a Monte Carlo experiment for comparing the role of different regularization terms and constraints. The results are available here: https://drive.google.com/drive/folders/1dTKuk95fpnj_5zeqMxB-kFpEhUga7fCI?usp=sharing. You can download the results and copy them in the folder named "results". Then, by running plotting_results.m you can generate the figure.
+
+** IMPORTANT: This Monte Carlo experiment is significantly time-consuming. On a standard PC, each iteration can take up to 6 hours or more. So the running time is approximately 3 x 120 x 0.25 days on a standard PC. Of course, using a workstation system allows for performing the experiment code more practically.
