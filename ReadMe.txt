@@ -1,7 +1,5 @@
 Learnin Koopman Operator
 
-** The folder will be fully uploaded by the end of 2022-8-12
-
 Ref: Representer Theorem for Learning Koopman Operators 
 Link: https://arxiv.org/abs/2208.01681
 
