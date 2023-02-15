@@ -1,4 +1,4 @@
-#Representer Theorem for Learning Koopman Operators
+# Representer Theorem for Learning Koopman Operators
 
 The codes corresponds the following paper:
 
