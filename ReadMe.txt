@@ -1,7 +1,7 @@
 Learnin Koopman Operator
 
-Ref: Representer Theorem for Learning Koopman Operators 
-Link: https://arxiv.org/abs/2208.01681
+Ref: M. Khosravi, "Representer Theorem for Learning Koopman Operators," in IEEE Transactions on Automatic Control, doi: 10.1109/TAC.2023.3242325.
+arXiv link: https://arxiv.org/abs/2208.01681
 
 The repository contains example of learning Koopman operator for the EDMD method and 
 the regularized learning approaches discussed in the reference above, i.e., the following 
